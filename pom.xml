@@ -4,7 +4,7 @@
   <artifactId>sitemanager</artifactId>
   <packaging>jar</packaging>
   <name>WebSite Manager</name>
-  <version>0.3.0</version>
+  <version>0.3.1-SNAPSHOT</version>
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <organization>
@@ -19,8 +19,8 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:svn:http://intra.debooy.eu/svn/SiteManager/tags/sitemanager-0.3.0</connection>
-    <developerConnection>scm:svn:http://intra.debooy.eu/svn/SiteManager/tags/sitemanager-0.3.0</developerConnection>
+    <connection>scm:svn:http://intra.debooy.eu/svn/SiteManager/trunk</connection>
+    <developerConnection>scm:svn:http://intra.debooy.eu/svn/SiteManager/trunk</developerConnection>
   </scm>
 
   <developers>
