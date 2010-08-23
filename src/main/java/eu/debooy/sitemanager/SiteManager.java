@@ -1,7 +1,7 @@
 /**
- * Copyright 2008 Marco de Booy
+ * Copyright 2008 Marco de Booij
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by
+ * Licensed under the EUPL, Version 1.1 or - as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
  * you may not use this work except in compliance with the Licence. You may
  * obtain a copy of the Licence at:
@@ -18,6 +18,7 @@ package eu.debooy.sitemanager;
 
 import eu.debooy.doosutils.Arguments;
 import eu.debooy.doosutils.Banner;
+import eu.debooy.doosutils.Datum;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -26,8 +27,13 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Hashtable;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
@@ -36,25 +42,33 @@ import org.apache.commons.net.ftp.FTPFile;
 
 
 /**
- * @author Marco de Booy
+ * @author Marco de Booij
  */
 public class SiteManager {
-  private static  Boolean   force           = false;
-  private static  Boolean   ftpOverview     = false;
-  private static  Boolean   ftpSync         = false;
-  private static  Boolean   localOverview   = false;
-  private static  Boolean   sourceGenerate  = false;
-  private static  FTPClient ftp             = new FTPClient();
-  private static  String    ftpHome         = "";
-  private static  String    ftpHost         = "";
-  private static  String    ftpPasswd       = "";
-  private static  String    ftpType         = "";
-  private static  String    ftpUser         = "";
-  private static  String    localSite       = "";
-  private static  String    sourcePages     = "";
-  private static  String    sourceIncludes  = "";
-  private static  Hashtable<String, Long>
-                            includes        = new Hashtable<String, Long>();
+  private static  Boolean         force           = false;
+  private static  Boolean         ftpOverview     = false;
+  private static  Boolean         ftpSync         = false;
+  private static  Boolean         localOverview   = false;
+  private static  Boolean         sourceGenerate  = false;
+  private static  BufferedWriter  sitemap         = null;
+  private static  Calendar        nu              = new GregorianCalendar();
+  private static  FTPClient       ftp             = new FTPClient();
+  private static  String          ftpHome         = "";
+  private static  String          ftpHost         = "";
+  private static  String          ftpPasswd       = "";
+  private static  String          ftpType         = "";
+  private static  String          ftpUser         = "";
+  private static  String          localSite       = "";
+  private static  String          siteURL         = "";
+  private static  String          sourcePages     = "";
+  private static  String          sourceIncludes  = "";
+  private static  Map<String, Long>
+                                  includes        = new HashMap<String, Long>();
+
+  private final static  String  INCLUDE_TAG     = "<include>";
+  private final static  String  INCLUDE_ENDTAG  = "</include>";
+
+  private SiteManager() {}
 
   /**
    * @param args
@@ -62,12 +76,18 @@ public class SiteManager {
   public static void main(String[] args) {
     Banner.printBanner("Site Manager");
 
+    if (args.length == 0) {
+      help();
+      return;
+    }
+
     Arguments       arguments   = new Arguments(args);
     arguments.setParameters(new String[] {"force", "ftpHome", "ftpHost",
                                           "ftpOverview", "ftpPasswd", "ftpSync",
                                           "ftpType", "ftpUser", "localOverview",
-                                          "localSite", "sourceGenerate",
-                                          "sourceIncludes", "sourcePages"});
+                                          "localSite", "siteURL",
+                                          "sourceGenerate", "sourceIncludes",
+                                          "sourcePages"});
     if (!arguments.isValid()) {
       help();
       System.out.println();
@@ -79,7 +99,9 @@ public class SiteManager {
 
     if (localOverview) {
       System.out.println("===== " + localSite + " =====");
+      openSitemap();
       showDirectoryContent(localSite);
+      closeSitemap();
       System.out.println();
     }
     
@@ -115,10 +137,23 @@ public class SiteManager {
         ftp.logout();
         ftp.disconnect();
       } catch (Exception e) {
-        e.printStackTrace();
+        System.out.println(e.getLocalizedMessage());
       }
     }
     System.out.println("===== Klaar =====");
+  }
+
+  /**
+   * Sluit het sitemap.xml bestand.
+   */
+  private static void closeSitemap() {
+    try {
+      sitemap.write("</urlset>");
+      sitemap.newLine();
+      sitemap.close();
+    } catch (IOException e) {
+      System.out.println(e.getLocalizedMessage());
+    }
   }
 
   /**
@@ -131,10 +166,11 @@ public class SiteManager {
     if (content != null) {
       for (int i = 0; i < content.length; i++) {
         File  file  = new File(directory + File.separator + content[i]);
-        if (file.isDirectory())
+        if (file.isDirectory()) {
           deleteDirectory(directory + File.separator + content[i]);
-        else
+        } else {
           file.delete();
+        }
       }
     }
     new File(directory).delete();
@@ -151,8 +187,9 @@ public class SiteManager {
     FTPFile[] ftpContent  = ftp.listFiles();
     if (ftpContent != null) {
       for (int i = 0; i < ftpContent.length; i++) {
-        if (ftpContent[i].isDirectory())
+        if (ftpContent[i].isDirectory()) {
           deleteFTPDirectory(ftpContent[i].getName());
+        }
         ftp.deleteFile(ftpContent[i].getName());
       }
     }
@@ -167,16 +204,17 @@ public class SiteManager {
   private static void help() {
     System.out.println("java -jar SiteManager.jar [OPTIE...]");
     System.out.println();
-    System.out.println("  --force          [true|FALSE] De HOME directory van de website.");
+    System.out.println("  --force          [true|FALSE] Altijd kopiÃ«ren naar de website.");
     System.out.println("  --ftpHome                     De HOME directory van de website.");
     System.out.println("  --ftpHost                     De URL van de host van de website.");
-    System.out.println("  --ftpOverview    [true|FALSE] Bestandslijst van de website?");
+    System.out.println("  --ftpOverview    [true|FALSE] Bestandslijst van de website.");
     System.out.println("  --ftpPasswd                   Password van de user voor het onderhoud van de website.");
     System.out.println("  --ftpSync        [true|FALSE] De website synchroniseren?");
     System.out.println("  --ftpType        [ACT|pas]    ACTive or PASsive FTP.");
     System.out.println("  --ftpUser                     De user voor het onderhoud van de website.");
     System.out.println("  --localOverview  [true|FALSE] Bestandslijst van de 'lokale' website?");
     System.out.println("  --localSite                   De directory van de 'lokale' website.");
+    System.out.println("  --siteURL                     De 'home' URL van de website (zonder http://).");
     System.out.println("  --sourceGenerate [true|FALSE] De 'lokale' website genereren?");
     System.out.println("  --sourceIncludes              De directory van de 'includes'.");
     System.out.println("  --sourcePages                 De directory van de 'source' paginas.");
@@ -196,9 +234,10 @@ public class SiteManager {
     try {
       invoer  = new BufferedReader(new FileReader(bestand));
       while ((lijn = invoer.readLine()) != null) {
-        if (lijn.indexOf("<include>") >= 0) {
-          String  include = lijn.substring(lijn.indexOf("<include>") + 9,
-                                           lijn.indexOf("</include>"));
+        if (lijn.indexOf(INCLUDE_TAG) >= 0) {
+          String  include = lijn.substring(lijn.indexOf(INCLUDE_TAG)
+                                            + INCLUDE_TAG.length(),
+                                           lijn.indexOf(INCLUDE_ENDTAG));
           if (includes.get(sourceIncludes + File.separator
                            + include) > modified) {
             invoer.close();
@@ -207,9 +246,10 @@ public class SiteManager {
         }
       }
       invoer.close();
-    } catch(IOException ex) {
-      if (null != invoer)
-      ex.printStackTrace();
+    } catch(IOException e) {
+      if (null != invoer) {
+        System.out.println(e.getLocalizedMessage());
+      }
     }
 
     return false;
@@ -229,7 +269,7 @@ public class SiteManager {
                                                              localSite));
     Long  sourceModified  =
       new File(directory + File.separator + content).lastModified();
-    if (file.exists())
+    if (file.exists()) {
       if (file.isFile()) {
         return (file.lastModified() < sourceModified
                 || isChanged((directory + File.separator + content),
@@ -238,6 +278,7 @@ public class SiteManager {
         deleteDirectory((directory + File.separator+ content)
             .replace(sourcePages, localSite));
       }
+    }
 
     return true;
   }
@@ -253,11 +294,12 @@ public class SiteManager {
     String  lijn  = null;
     try {
       while ((lijn = invoer.readLine()) != null) {
-        if (lijn.indexOf("<include>") >= 0) {
+        if (lijn.indexOf(INCLUDE_TAG) >= 0) {
           BufferedReader  include = new BufferedReader(
               new FileReader(sourceIncludes + File.separator
-                             + lijn.substring(lijn.indexOf("<include>") + 9,
-                                              lijn.indexOf("</include>"))));
+                             + lijn.substring(lijn.indexOf(INCLUDE_TAG)
+                                               + INCLUDE_TAG.length(),
+                                              lijn.indexOf(INCLUDE_ENDTAG))));
           kopieerInhoud(include, uitvoer);
         } else {
           uitvoer.write(lijn);
@@ -265,7 +307,25 @@ public class SiteManager {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println(e.getLocalizedMessage());
+    }
+  }
+
+  /**
+   * Open het sitmap.xml bestand.
+   */
+  private static void openSitemap() {
+    nu.setTime(new Date());
+
+    try {
+      sitemap = new BufferedWriter(
+          new FileWriter((localSite + File.separator + "sitemap.xml")));
+      sitemap.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sitemap.newLine();
+      sitemap.write("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+      sitemap.newLine();
+    } catch (IOException e) {
+      System.out.println(e.getLocalizedMessage());
     }
   }
 
@@ -311,6 +371,9 @@ public class SiteManager {
     if (arguments.hasArgument("localSite")) {
       localSite       = arguments.getArgument("localSite");
     }
+    if (arguments.hasArgument("siteURL")) {
+      siteURL         = arguments.getArgument("siteURL");
+    }
     if (arguments.hasArgument("sourcePages")) {
       sourcePages     = arguments.getArgument("sourcePages");
     }
@@ -332,8 +395,8 @@ public class SiteManager {
           File  item  = new File(directory + File.separator + content[i]);
           if (item.isDirectory()) {
             String  naam    =
-              (directory + File.separator+ content[i]).replace(sourcePages,
-                                                               localSite);
+              (directory + File.separator + content[i]).replace(sourcePages,
+                                                                localSite);
             File    uitvoer = new File(naam);
             if (uitvoer.exists()) {
               if (uitvoer.isFile()) {
@@ -345,7 +408,7 @@ public class SiteManager {
             }
             processWebSite(directory + File.separator + content[i]);
           } else if (isChanged(directory, content[i])) {
-            System.out.println("Modified: "+ directory + File.separator
+            System.out.println("Modified: " + directory + File.separator
                                + content[i]);
             BufferedReader  invoer  =
             new BufferedReader(
@@ -359,9 +422,9 @@ public class SiteManager {
             invoer.close();
           }
         } catch (RuntimeException re) {
-          re.printStackTrace();
+          System.out.println(re.getLocalizedMessage());
         } catch (Exception e) {
-          e.printStackTrace();
+          System.out.println(e.getLocalizedMessage());
         }
       }
     }
@@ -378,15 +441,71 @@ public class SiteManager {
       for (int i = 0; i < content.length; i++) {
         String  fileName  = directory + File.separator + content[i];
         File  file  = new File(fileName);
-        if (file.isDirectory())
+        if (file.isDirectory()) {
           setIncludeModified(fileName);
-        else
+        } else {
           includes.put(fileName, file.lastModified());
+        }
       }
     }
   }
 
+  /**
+   * Voeg een pagina toe aan de sitemap.xml
+   * 
+   * @param loc
+   * @param lastmod
+   */
+  private static void schrijfSitemap(String loc, Date lastmod) {
+    Calendar  file        = new GregorianCalendar();
+    file.setTime(lastmod);
+    // always, hourly, daily, weekly, monthly, yearly, never
+    String    changefreq  = "weekly";
+    int       priority    = 10;
+    long      dagen       = (nu.getTimeInMillis() - file.getTimeInMillis())
+                            / (24 * 60 * 60 * 1000);
+    
+    if (dagen <= 7) {
+      changefreq  = "weekly";
+      priority    = 10;
+    } else if (dagen <= 31) {
+      changefreq  = "monthly";
+      priority    = 9;
+    } else if (dagen <= 93) {
+      changefreq  = "monthly";
+      priority    = 8;
+    } else if (dagen <= 183) {
+      changefreq  = "monthly";
+      priority    = 7;
+    } else if (dagen <= 365) {
+      changefreq  = "yearly";
+      priority    = 6;
+    } else {
+      changefreq  = "never";
+      priority    = 5;
+    }
 
+    try {
+      sitemap.write("  <url>");
+      sitemap.newLine();
+      sitemap.write("    <loc>http://" + siteURL + "/" + loc + "</loc>");
+      sitemap.newLine();
+      sitemap.write("    <lastmod>" + Datum.fromDate(lastmod, "yyyy-MM-dd")
+                    + "</lastmod>");
+      sitemap.newLine();
+      sitemap.write("    <changefreq>" + changefreq + "</changefreq>");
+      sitemap.newLine();
+      sitemap.write("    <priority>" + ((priority > 9) ? "1.0" : "0."
+                    + priority) + "</priority>");
+      sitemap.newLine();
+      sitemap.write("  </url>");
+      sitemap.newLine();
+    } catch (IOException e) {
+      System.out.println(e.getLocalizedMessage());
+    } catch (ParseException e) {
+      System.out.println(e.getLocalizedMessage());
+    }
+  }
   /**
    * Geeft de inhoud van een directory.
    * 
@@ -398,9 +517,24 @@ public class SiteManager {
     if (content != null) {
       for (int i = 0; i < content.length; i++) {
         File  file  = new File(directory + File.separator + content[i]);
-        System.out.println(directory + File.separator + content[i]);
-        if (file.isDirectory())
+        String  datum = "";
+        try {
+          datum = Datum.fromDate(new Date(file.lastModified()),
+                                 "dd/MM/yyyy HH:mm:ss.SSS") + " - ";
+          if (!"".equals(siteURL)
+              && file.isFile()
+              && content[i].endsWith(".html")) {
+            schrijfSitemap((directory + File.separator + content[i])
+                              .replace(localSite + "\\", "").replace('\\', '/'),
+                           new Date(file.lastModified()));
+          }
+        } catch (ParseException e) {
+          System.out.println(e.getLocalizedMessage());
+        }
+        System.out.println(datum +  directory + File.separator + content[i]);
+        if (file.isDirectory()) {
           showDirectoryContent(directory + File.separator + content[i]);
+        }
       }
     }
   }
@@ -419,13 +553,14 @@ public class SiteManager {
       if (content != null) {
         for (int i = 0; i < content.length; i++) {
           System.out.println(pwd + "/" + content[i].getName());
-          if (content[i].isDirectory())
+          if (content[i].isDirectory()) {
             showFTPDirectoryContent(content[i].getName());
+          }
         }
       }
       ftp.changeWorkingDirectory("..");
     } catch (IOException e) {
-      e.printStackTrace();
+      System.out.println(e.getLocalizedMessage());
     }
   }
   /**
@@ -436,10 +571,11 @@ public class SiteManager {
    */
   private static void synchroniseDirectory(String directory)
       throws IOException {
-    String    ftpDir      =
+    String  ftpDir  =
       directory.substring(directory.lastIndexOf(File.separator)+1);
-    if (localSite.equals(directory))
+    if (localSite.equals(directory)) {
       ftpDir  = "";
+    }
     ftp.changeWorkingDirectory(ftpDir);
     System.out.println("FTP Directory: " + ftp.printWorkingDirectory());
     FTPFile[] ftpContent  = ftp.listFiles();
@@ -449,10 +585,12 @@ public class SiteManager {
     TreeMap<String, String>
               locFiles    = new TreeMap<String, String>();
 
-    for (int i = 0; i < ftpContent.length; i++)
+    for (int i = 0; i < ftpContent.length; i++) {
       ftpFiles.put(ftpContent[i].getName(), ftpContent[i]);
-    for (int i = 0; i < locContent.length; i++)
+    }
+    for (int i = 0; i < locContent.length; i++) {
       locFiles.put(locContent[i], locContent[i]);
+    }
 
     Iterator<Entry<String, FTPFile>> ftpIter = ftpFiles.entrySet().iterator();
     Iterator<Entry<String, String>>  locIter = locFiles.entrySet().iterator();
@@ -481,8 +619,18 @@ public class SiteManager {
             if (locItem.lastModified() > ftpItem.getTimestamp()
                                                 .getTimeInMillis()
                 || force) {
+              String  datum = "";
+              try {
+                datum = Datum.fromDate(new Date(locItem.lastModified()),
+                                       "dd/MM/yyyy HH:mm:ss.SSS") + " - "
+                        + Datum.fromDate(new Date(ftpItem.getTimestamp()
+                                                         .getTimeInMillis()),
+                                       "dd/MM/yyyy HH:mm:ss.SSS");
+              } catch (ParseException e) {
+                System.out.println(e.getLocalizedMessage());
+              }
               System.out.println("Vervang  : " + ftp.printWorkingDirectory()
-                                 + "/" + locFile);
+                                 + "/" + locFile + " [" +  datum + "]");
               ftp.storeFile(locFile, new FileInputStream(directory
                                                          + File.separator
                                                          + locFile));

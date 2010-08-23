@@ -4,11 +4,11 @@
   <artifactId>sitemanager</artifactId>
   <packaging>jar</packaging>
   <name>WebSite Manager</name>
-  <version>0.2.1-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <organization>
-    <name>Marco de Booy</name>
+    <name>Marco de Booij</name>
     <url>http://www.debooy.eu</url>
   </organization>
   <licenses>
@@ -25,7 +25,7 @@
 
   <developers>
     <developer>
-      <name>Marco de Booy</name>
+      <name>Marco de Booij</name>
       <id>booymar</id>
       <email>marco.developer@debooy.eu</email>
       <organization>DOOS</organization>
@@ -47,6 +47,11 @@
       <name>DOOS releases</name>
       <url>http://intra.debooy.eu/nexus/content/repositories/doos-snapshots</url>
     </snapshotRepository>
+    <site>
+      <id>Documentatie</id>
+      <name>DOOS Documentatie</name>
+      <url>scp://intra.debooy.eu/var/www/site/SiteManager</url>
+    </site>
   </distributionManagement>
 
   <build>
@@ -56,6 +61,7 @@
         <configuration>
           <source>1.6</source>
           <target>1.6</target>
+          <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
       <plugin>
@@ -123,6 +129,11 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>2.1.1</version>
+      </plugin>
     </plugins>
   </build>
 
@@ -176,7 +187,7 @@
     <dependency>
       <groupId>eu.debooy.doosutils</groupId>
       <artifactId>doosutils-core</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.2</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
