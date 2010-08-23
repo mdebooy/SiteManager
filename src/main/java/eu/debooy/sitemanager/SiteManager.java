@@ -137,7 +137,7 @@ public class SiteManager {
         ftp.logout();
         ftp.disconnect();
       } catch (Exception e) {
-        System.out.println(e.getLocalizedMessage());
+        System.err.println(e.getLocalizedMessage());
       }
     }
     System.out.println("===== Klaar =====");
@@ -169,11 +169,27 @@ public class SiteManager {
         if (file.isDirectory()) {
           deleteDirectory(directory + File.separator + content[i]);
         } else {
-          file.delete();
+          try {
+            if (!file.delete()) {
+              System.out.println("Kan bestand " + directory + File.separator
+                                 + content[i] + " niet verwijderen.");
+            }
+          } catch (SecurityException e) {
+            System.out.println("Fout bij verwijderen van " + directory
+                               + File.separator + content[i] + " ["
+                               + e.getLocalizedMessage() + "].");
+          }
         }
       }
     }
-    new File(directory).delete();
+    try {
+      if (!new File(directory).delete()) {
+        System.out.println("Kan directory " + directory + " niet verwijderen.");
+      }
+    } catch (SecurityException e) {
+      System.out.println("Fout bij verwijderen van " + directory + " ["
+                         + e.getLocalizedMessage() + "].");
+    }
   }
 
   /**
@@ -321,7 +337,7 @@ public class SiteManager {
       sitemap = new BufferedWriter(
           new FileWriter((localSite + File.separator + "sitemap.xml")));
       sitemap.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        sitemap.newLine();
+      sitemap.newLine();
       sitemap.write("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
       sitemap.newLine();
     } catch (IOException e) {
@@ -400,11 +416,35 @@ public class SiteManager {
             File    uitvoer = new File(naam);
             if (uitvoer.exists()) {
               if (uitvoer.isFile()) {
-                uitvoer.delete();
-                (new File(naam)).mkdir();
+                try{
+                  if (!uitvoer.delete()) {
+                    System.out.println("Kan bestand " + naam
+                                       + " niet verwijderen.");
+                  }
+                } catch (SecurityException e) {
+                  System.out.println("Fout bij verwijderen van " + naam + " ["
+                                     + e.getLocalizedMessage() + "].");
+                }
+                try{
+                  if (!(new File(naam)).mkdir()) {
+                    System.out.println("Kan directory " + naam
+                        + " niet maken.");
+                  }
+                } catch (SecurityException e) {
+                  System.out.println("Fout bij maken van " + naam + " ["
+                                     + e.getLocalizedMessage() + "].");
+                }
               }
             } else {
-              (new File(naam)).mkdir();
+              try{
+                if (!(new File(naam)).mkdir()) {
+                  System.out.println("Kan directory " + naam
+                      + " niet maken.");
+                }
+              } catch (SecurityException e) {
+                System.out.println("Fout bij maken van " + naam + " ["
+                                   + e.getLocalizedMessage() + "].");
+              }
             }
             processWebSite(directory + File.separator + content[i]);
           } else if (isChanged(directory, content[i])) {
