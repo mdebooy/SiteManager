@@ -34,8 +34,8 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -74,12 +74,30 @@ public class SiteManager {
    * @param args
    */
   public static void main(String[] args) {
-    Banner.printBanner("Site Manager");
-
     if (args.length == 0) {
+      Banner.printBanner("Site Manager");
       help();
       return;
     }
+    String    commando      = args[0];
+
+    String[]  commandoArgs  = new String[args.length-1];
+    System.arraycopy(args, 1, commandoArgs, 0, args.length-1);
+
+    if ("generaterss".equalsIgnoreCase(commando)) {
+      GenerateRss.execute(commandoArgs);
+      return;
+    }
+    if ("generatesite".equalsIgnoreCase(commando)) {
+      GenerateSite.execute(commandoArgs);
+      return;
+    }
+    if ("synchronisesite".equalsIgnoreCase(commando)) {
+      SynchroniseSite.execute(commandoArgs);
+      return;
+    }
+
+    Banner.printBanner("Site Manager");
 
     Arguments       arguments   = new Arguments(args);
     arguments.setParameters(new String[] {"force", "ftpHome", "ftpHost",
@@ -220,6 +238,10 @@ public class SiteManager {
   private static void help() {
     System.out.println("java -jar SiteManager.jar [OPTIE...]");
     System.out.println();
+    System.out.println("  GenerateRSS       Genereer een RSS feed.");
+    System.out.println("  GenerateSite      Genereer de Website in een lokale directory.");
+    System.out.println("  SynchroniseSite   Synchroniseert de Website met de lokale directory.");
+    System.out.println();
     System.out.println("  --force          [true|FALSE] Altijd kopiëren naar de website.");
     System.out.println("  --ftpHome                     De HOME directory van de website.");
     System.out.println("  --ftpHost                     De URL van de host van de website.");
@@ -234,6 +256,12 @@ public class SiteManager {
     System.out.println("  --sourceGenerate [true|FALSE] De 'lokale' website genereren?");
     System.out.println("  --sourceIncludes              De directory van de 'includes'.");
     System.out.println("  --sourcePages                 De directory van de 'source' paginas.");
+    System.out.println();
+    GenerateRss.help();
+    System.out.println();
+    GenerateSite.help();
+    System.out.println();
+    SynchroniseSite.help();
     System.out.println();
   }
 
