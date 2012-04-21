@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>eu.debooy.maven</groupId>
@@ -11,12 +10,12 @@
   <artifactId>sitemanager</artifactId>
   <packaging>jar</packaging>
   <name>WebSite Manager</name>
-  <version>0.3.1-SNAPSHOT</version>
+  <version>0.4.0</version>
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <scm>
-    <connection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</connection>
-    <developerConnection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</developerConnection>
+    <connection>scm:svn:http://svn.debooy.eu/svn/SiteManager/tags/sitemanager-0.4.0</connection>
+    <developerConnection>scm:svn:http://svn.debooy.eu/svn/SiteManager/tags/sitemanager-0.4.0</developerConnection>
   </scm>
 
   <developers>
