@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -121,20 +122,27 @@ public class SynchroniseSite {
       ftp.login(ftpUser, ftpPasswd);
       ftp.setFileType(FTPClient.BINARY_FILE_TYPE);
 
-      if (ftpOverview) {
-        showFTPDirectoryContent(ftpHome);
-        System.out.println();
-      }
-
       if (ftpSync) {
         ftp.changeWorkingDirectory(ftpHome);
         synchroniseDirectory(localSite);
       }
 
+      if (ftpOverview) {
+        showFTPDirectoryContent(ftpHome);
+        System.out.println();
+      }
+
       ftp.logout();
-      ftp.disconnect();
-    } catch (Exception e) {
-      System.err.println(e.getLocalizedMessage());
+    } catch (IOException e) {
+      System.err.println("IOException: " + e.getLocalizedMessage());
+    } finally {
+      try {
+        if (ftp.isConnected()) {
+          ftp.disconnect();
+        }
+      } catch (IOException e) {
+        System.err.println("IOException: " + e.getLocalizedMessage());
+      }
     }
     System.out.println("Klaar.");
   }
@@ -171,7 +179,7 @@ public class SynchroniseSite {
       ftp.changeWorkingDirectory(directory);
       String  pwd = ftp.printWorkingDirectory();
       FTPFile[] content = ftp.listFiles();
-      if (content != null) {
+      if (null != content) {
         for (int i = 0; i < content.length; i++) {
           System.out.println(pwd + "/" + content[i].getName());
           if (content[i].isDirectory()) {
@@ -181,9 +189,10 @@ public class SynchroniseSite {
       }
       ftp.changeWorkingDirectory("..");
     } catch (IOException e) {
-      System.out.println(e.getLocalizedMessage());
+      System.out.println("IOException: " + e.getLocalizedMessage());
     }
   }
+
   /**
    * Synchronise the WebSite with the local copy.
    * 
@@ -198,12 +207,11 @@ public class SynchroniseSite {
       ftpDir  = "";
     }
     ftp.changeWorkingDirectory(ftpDir);
-    System.out.println("FTP Directory: " + ftp.printWorkingDirectory());
     FTPFile[] ftpContent  = ftp.listFiles();
     String[]  locContent  = new File(directory).list();
-    TreeMap<String, FTPFile> 
+    Map<String, FTPFile> 
               ftpFiles    = new TreeMap<String, FTPFile>();
-    TreeMap<String, String>
+    Map<String, String>
               locFiles    = new TreeMap<String, String>();
 
     for (int i = 0; i < ftpContent.length; i++) {
@@ -213,12 +221,14 @@ public class SynchroniseSite {
       locFiles.put(locContent[i], locContent[i]);
     }
 
-    Iterator<Entry<String, FTPFile>> ftpIter = ftpFiles.entrySet().iterator();
-    Iterator<Entry<String, String>>  locIter = locFiles.entrySet().iterator();
-    String            ftpFile = "{";
-    FTPFile           ftpItem = null;
-    String            locFile = "{";
-    File              locItem = null;
+    Iterator<Entry<String, FTPFile>>
+            ftpIter = ftpFiles.entrySet().iterator();
+    Iterator<Entry<String, String>>
+            locIter = locFiles.entrySet().iterator();
+    String  ftpFile = "{";
+    FTPFile ftpItem = null;
+    String  locFile = "{";
+    File    locItem = null;
     if (ftpIter.hasNext()) {
       ftpFile = ftpIter.next().getKey();
       ftpItem = ftpFiles.get(ftpFile);
@@ -248,7 +258,7 @@ public class SynchroniseSite {
                                                          .getTimeInMillis()),
                                        "dd/MM/yyyy HH:mm:ss.SSS");
               } catch (ParseException e) {
-                System.out.println(e.getLocalizedMessage());
+                System.out.println("ParseException: " + e.getLocalizedMessage());
               }
               System.out.println("Vervang  : " + ftp.printWorkingDirectory()
                                  + "/" + locFile + " [" +  datum + "]");

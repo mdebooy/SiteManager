@@ -208,6 +208,9 @@ public class GenerateRss {
     output.newLine();
     output.write("    <pubDate>" + params.get("pubDate") + "</pubDate>");
     output.newLine();
+    output.write("    <lastBuildDate>" + params.get("pubDate")
+                 + "</lastBuildDate>");
+    output.newLine();
     output.write("    <language>" + params.get("language") + "</language>");
     output.newLine();
     output.write("    <atom:link href=\"" + params.get("rssBestand")
