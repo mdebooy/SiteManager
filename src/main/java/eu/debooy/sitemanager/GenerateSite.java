@@ -20,6 +20,7 @@ import eu.debooy.doosutils.Arguments;
 import eu.debooy.doosutils.Banner;
 import eu.debooy.doosutils.Datum;
 import eu.debooy.doosutils.DoosConstants;
+import eu.debooy.doosutils.DoosUtils;
 import eu.debooy.doosutils.access.Bestand;
 import eu.debooy.doosutils.exception.BestandException;
 
@@ -28,6 +29,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -35,22 +38,31 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 
 /**
  * @author Marco de Booij
  */
-public class GenerateSite {
-  private final static  String  INCLUDE_TAG     = "<include>";
-  private final static  String  INCLUDE_ENDTAG  = "</include>";
+public final class GenerateSite {
+  private static  ResourceBundle  resourceBundle  =
+      ResourceBundle.getBundle("ApplicatieResources", Locale.getDefault());
+
+  private static final  String  INCLUDE_TAG     = "<include>";
+  private static final  String  INCLUDE_ENDTAG  = "</include>";
 
   private static  Boolean           localOverview   = false;
   private static  Boolean           sourceGenerate  = true;
   private static  BufferedWriter    sitemap         = null;
   private static  Map<String, Long> includes        =
       new HashMap<String, Long>();
-  private static  Calendar          nu              = new GregorianCalendar();
+  private static  long              nu              = 0L;
+  private static  String            charsetIn       =
+      Charset.defaultCharset().name();
+  private static  String            charsetUit      =
+      Charset.defaultCharset().name();
   private static  String            localSite       = "";
   private static  String            siteURL         = "";
   private static  String            sourcePages     = "";
@@ -67,7 +79,7 @@ public class GenerateSite {
       sitemap.newLine();
       sitemap.close();
     } catch (IOException e) {
-      System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     }
   }
 
@@ -86,33 +98,43 @@ public class GenerateSite {
         } else {
           try {
             if (!file.delete()) {
-              System.out.println("Kan bestand " + directory + File.separator
-                                 + content[i] + " niet verwijderen.");
+              DoosUtils.foutNaarScherm(
+                  MessageFormat.format(
+                      resourceBundle.getString("error.verwijder.bestand"),
+                      directory + File.separator + content[i]));
             }
           } catch (SecurityException e) {
-            System.out.println("Fout bij verwijderen van " + directory
-                               + File.separator + content[i] + " ["
-                               + e.getLocalizedMessage() + "].");
+            DoosUtils.foutNaarScherm(
+                MessageFormat.format(
+                    resourceBundle.getString("error.verwijder"),
+                    directory + File.separator + content[i],
+                    e.getLocalizedMessage()));
           }
         }
       }
     }
     try {
       if (!new File(directory).delete()) {
-        System.out.println("Kan directory " + directory + " niet verwijderen.");
+        DoosUtils.foutNaarScherm(
+            MessageFormat.format(
+                resourceBundle.getString("error.verwijder.directory"),
+                directory));
       }
     } catch (SecurityException e) {
-      System.out.println("Fout bij verwijderen van " + directory + " ["
-                         + e.getLocalizedMessage() + "].");
+      DoosUtils.foutNaarScherm(
+          MessageFormat.format(
+              resourceBundle.getString("error.verwijder"),
+              directory,
+              e.getLocalizedMessage()));
     }
   }
 
   public static void execute(String[] args) {
-
-    Banner.printBanner("Generate Site");
+    Banner.printBanner(resourceBundle.getString("banner.genereer.site"));
 
     Arguments arguments = new Arguments(args);
-    arguments.setParameters(new String[] {"localOverview", "localSite",
+    arguments.setParameters(new String[] {"charsetin", "charsetuit",
+                                          "localOverview", "localSite",
                                           "siteURL", "sourceGenerate",
                                           "sourceIncludes", "sourcePages"});
     arguments.setVerplicht(new String[] {"localSite"});
@@ -122,6 +144,12 @@ public class GenerateSite {
     }
 
     // Zet de parameters.
+    if (arguments.hasArgument("charsetin")) {
+      charsetIn   = arguments.getArgument("charsetin");
+    }
+    if (arguments.hasArgument("charsetuit")) {
+      charsetUit  = arguments.getArgument("charsetuit");
+    }
     if (arguments.hasArgument("localOverview")) {
       localOverview   =
         Boolean.parseBoolean(arguments.getArgument("localOverview"));
@@ -144,19 +172,18 @@ public class GenerateSite {
     List<String>  fouten  = new ArrayList<String>();
     if (sourceGenerate) {
       if (!arguments.hasArgument("sourcePages")) {
-        fouten.add("- sourcePages verplicht bij sourceGenerate=true.");
+        fouten.add(resourceBundle.getString("error.sourcepages.afwezig"));
       }
       if (!arguments.hasArgument("siteURL")) {
-        fouten.add("- siteURL verplicht bij sourceGenerate=true.");
+        fouten.add(resourceBundle.getString("error.siteurl.afwezig"));
       }
       if (!arguments.hasArgument("sourceIncludes")) {
-        fouten.add("- sourceIncludes verplicht bij sourceGenerate=true.");
+        fouten.add(resourceBundle.getString("error.sourceincludes.afwezig"));
       }
     }
     if (!fouten.isEmpty()) {
-      help();
       for (String fout: fouten) {
-        System.out.println(fout);
+        DoosUtils.foutNaarScherm(fout);
       }
       return;
     }
@@ -173,27 +200,46 @@ public class GenerateSite {
       closeSitemap();
     }
 
-    System.out.println("Local Site: " + localSite);
-    System.out.println("Klaar.");
+    DoosUtils.naarScherm("Local Site: " + localSite);
+    DoosUtils.naarScherm("Klaar.");
   }
 
   /**
    * Geeft de 'help' pagina.
    */
   protected static void help() {
-    System.out.println("java -jar SiteManager.jar GenerateSite --localSite=<directory> [OPTIE...]");
-    System.out.println();
-    System.out.println("  --localOverview  [true|FALSE] Bestandslijst van de 'lokale' website?");
-    System.out.println("  --localSite                   De directory van de 'lokale' website.");
-    System.out.println("  --siteURL                     De 'home' URL van de website (zonder http://).");
-    System.out.println("  --sourceGenerate [TRUE|false] De 'lokale' website genereren?");
-    System.out.println("  --sourceIncludes              De directory van de 'includes'.");
-    System.out.println("  --sourcePages                 De directory van de 'source' paginas.");
-    System.out.println();
-    System.out.println("De parameter localSite is altijd verplicht.");
-    System.out.println("Bij sourceGenerate TRUE zijn de parameters siteURL, sourceIncludes, en");
-    System.out.println("  sourcePages ook verplicht.");
-    System.out.println();
+    DoosUtils.naarScherm("java -jar SiteManager.jar GenerateSite --localSite=<"
+                         + resourceBundle.getString("label.directory")
+                         + ">  [" + resourceBundle.getString("label.optie")
+                         + "]");
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm("  --charsetin                   ",
+        MessageFormat.format(resourceBundle.getString("help.charsetin"),
+                             Charset.defaultCharset().name()), 80);
+    DoosUtils.naarScherm("  --charsetuit                  ",
+        MessageFormat.format(resourceBundle.getString("help.charsetuit"),
+                             Charset.defaultCharset().name()), 80);
+    DoosUtils.naarScherm("  --localOverview  [true|FALSE] ",
+                         resourceBundle.getString("help.locakloverview"), 80);
+    DoosUtils.naarScherm("  --localSite                   ",
+                         resourceBundle.getString("help.localsite"), 80);
+    DoosUtils.naarScherm("  --siteURL                     ",
+                         resourceBundle.getString("help.site.url"), 80);
+    DoosUtils.naarScherm("  --sourceGenerate [TRUE|false] ",
+                         resourceBundle.getString("help.source.generate"), 80);
+    DoosUtils.naarScherm("  --sourceIncludes              ",
+                         resourceBundle.getString("help.source.includes"), 80);
+    DoosUtils.naarScherm("  --sourcePages                 ",
+                         resourceBundle.getString("source.pages"), 80);
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm(
+        MessageFormat.format(resourceBundle.getString("help.paramverplicht"),
+                             "localSite"), 80);
+    DoosUtils.naarScherm(
+        MessageFormat.format(resourceBundle.getString("help.conditieverplicht"),
+                             "sourceGenerate TRUE", "siteURL, sourceIncludes",
+                             "sourcePages"), 80);
+    DoosUtils.naarScherm("");
   }
 
   /**
@@ -215,15 +261,19 @@ public class GenerateSite {
                                            lijn.indexOf(INCLUDE_ENDTAG));
           if (includes.get(sourceIncludes + File.separator
                            + include) > modified) {
-            invoer.close();
             return true;
           }
         }
       }
-      invoer.close();
     } catch (IOException e) {
-      if (null != invoer) {
-        System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
+    } finally {
+      if (null!= invoer) {
+        try {
+          invoer.close();
+        } catch (IOException e) {
+          DoosUtils.foutNaarScherm(e.getLocalizedMessage());
+        }
       }
     }
 
@@ -270,19 +320,22 @@ public class GenerateSite {
     try {
       while ((lijn = invoer.readLine()) != null) {
         if (lijn.indexOf(INCLUDE_TAG) >= 0) {
-          BufferedReader  include = new BufferedReader(
-              new FileReader(sourceIncludes + File.separator
-                             + lijn.substring(lijn.indexOf(INCLUDE_TAG)
-                                               + INCLUDE_TAG.length(),
-                                              lijn.indexOf(INCLUDE_ENDTAG))));
+          BufferedReader  include =
+              Bestand.openInvoerBestand(sourceIncludes + File.separator
+                  + lijn.substring(lijn.indexOf(INCLUDE_TAG)
+                                   + INCLUDE_TAG.length(),
+                                   lijn.indexOf(INCLUDE_ENDTAG)),
+                                        charsetIn);
           kopieerInhoud(include, uitvoer);
         } else {
           uitvoer.write(lijn);
           uitvoer.newLine();
         }
       }
-    } catch (Exception e) {
-      System.out.println(e.getLocalizedMessage());
+    } catch (BestandException e) {
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
+    } catch (IOException e) {
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     }
   }
 
@@ -290,19 +343,19 @@ public class GenerateSite {
    * Open het sitmap.xml bestand.
    */
   private static void openSitemap() {
-    nu.setTime(new Date());
+    nu  = new Date().getTime();
 
     try {
       sitemap = Bestand.openUitvoerBestand(localSite + File.separator
-                                          + "sitemap.xml");
+                                          + "sitemap.xml", charsetUit);
       sitemap.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
       sitemap.newLine();
       sitemap.write("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
       sitemap.newLine();
     } catch (BestandException e) {
-      System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     } catch (IOException e) {
-      System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     }
   }
 
@@ -326,53 +379,55 @@ public class GenerateSite {
               if (uitvoer.isFile()) {
                 try{
                   if (!uitvoer.delete()) {
-                    System.out.println("Kan bestand " + naam
-                                       + " niet verwijderen.");
+                    DoosUtils.foutNaarScherm("Kan bestand " + naam
+                                             + " niet verwijderen.");
                   }
                 } catch (SecurityException e) {
-                  System.out.println("Fout bij verwijderen van " + naam + " ["
-                                     + e.getLocalizedMessage() + "].");
+                  DoosUtils.foutNaarScherm("Fout bij verwijderen van " + naam
+                                           + " ["+ e.getLocalizedMessage()
+                                           + "].");
                 }
                 try{
                   if (!(new File(naam)).mkdir()) {
-                    System.out.println("Kan directory " + naam
-                        + " niet maken.");
+                    DoosUtils.foutNaarScherm("Kan directory " + naam
+                                             + " niet maken.");
                   }
                 } catch (SecurityException e) {
-                  System.out.println("Fout bij maken van " + naam + " ["
-                                     + e.getLocalizedMessage() + "].");
+                  DoosUtils.foutNaarScherm("Fout bij maken van " + naam + " ["
+                                           + e.getLocalizedMessage() + "].");
                 }
               }
             } else {
               try{
                 if (!(new File(naam)).mkdir()) {
-                  System.out.println("Kan directory " + naam
-                      + " niet maken.");
+                  DoosUtils.foutNaarScherm("Kan directory " + naam
+                                           + " niet maken.");
                 }
               } catch (SecurityException e) {
-                System.out.println("Fout bij maken van " + naam + " ["
-                                   + e.getLocalizedMessage() + "].");
+                DoosUtils.foutNaarScherm("Fout bij maken van " + naam + " ["
+                                         + e.getLocalizedMessage() + "].");
               }
             }
             processWebSite(directory + File.separator + content[i]);
           } else if (isChanged(directory, content[i])) {
-            System.out.println("Modified: " + directory + File.separator
-                               + content[i]);
+            DoosUtils.naarScherm("Modified: " + directory + File.separator
+                                 + content[i]);
             BufferedReader  invoer  =
                 Bestand.openInvoerBestand(directory + File.separator
-                                          + content[i]);
+                                          + content[i], charsetIn);
             BufferedWriter  uitvoer =
                 Bestand.openUitvoerBestand((directory + File.separator
                                             + content[i])
-                                              .replace(sourcePages, localSite));
+                                              .replace(sourcePages, localSite),
+                                            charsetUit);
             kopieerInhoud(invoer, uitvoer);
             uitvoer.close();
             invoer.close();
           }
         } catch (BestandException e) {
-          System.out.println(e.getLocalizedMessage());
+          DoosUtils.foutNaarScherm(e.getLocalizedMessage());
         } catch (IOException e) {
-          System.out.println(e.getLocalizedMessage());
+          DoosUtils.foutNaarScherm(e.getLocalizedMessage());
         }
       }
     }
@@ -390,7 +445,7 @@ public class GenerateSite {
     // always, hourly, daily, weekly, monthly, yearly, never
     String    changefreq  = "weekly";
     int       priority    = 10;
-    long      dagen       = (nu.getTimeInMillis() - file.getTimeInMillis())
+    long      dagen       = (nu - file.getTimeInMillis())
                             / (24 * 60 * 60 * 1000);
     
     if (dagen <= 7) {
@@ -429,9 +484,9 @@ public class GenerateSite {
       sitemap.write("  </url>");
       sitemap.newLine();
     } catch (IOException e) {
-      System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     } catch (ParseException e) {
-      System.out.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     }
   }
 
@@ -471,7 +526,7 @@ public class GenerateSite {
           datum = Datum.fromDate(new Date(file.lastModified()),
                                  DoosConstants.DATUM_TIJD) + " - ";
         } catch (ParseException e) {
-          System.out.println(e.getLocalizedMessage());
+          DoosUtils.foutNaarScherm(e.getLocalizedMessage());
         }
         if (!"".equals(siteURL)
             && file.isFile()
@@ -481,7 +536,8 @@ public class GenerateSite {
                          new Date(file.lastModified()));
         }
         if (localOverview) {
-          System.out.println(datum +  directory + File.separator + content[i]);
+          DoosUtils.naarScherm(datum +  directory + File.separator
+                               + content[i]);
         }
         if (file.isDirectory()) {
           showDirectoryContent(directory + File.separator + content[i]);

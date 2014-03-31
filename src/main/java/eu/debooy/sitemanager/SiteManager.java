@@ -17,12 +17,19 @@
 package eu.debooy.sitemanager;
 
 import eu.debooy.doosutils.Banner;
+import eu.debooy.doosutils.DoosUtils;
+
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 
 /**
  * @author Marco de Booij
  */
-public class SiteManager {
+public final class SiteManager {
+  private static  ResourceBundle  resourceBundle  =
+      ResourceBundle.getBundle("ApplicatieResources", Locale.getDefault());
+
   private SiteManager() {}
 
   /**
@@ -30,7 +37,7 @@ public class SiteManager {
    */
   public static void main(String[] args) {
     if (args.length == 0) {
-      Banner.printBanner("Site Manager");
+      Banner.printBanner(resourceBundle.getString("banner.site.manager"));
       help();
       return;
     }
@@ -52,7 +59,7 @@ public class SiteManager {
       return;
     }
 
-    Banner.printBanner("Site Manager");
+    Banner.printBanner(resourceBundle.getString("banner.site.manager"));
     help();
   }
 
@@ -60,32 +67,18 @@ public class SiteManager {
    * Geeft de 'help' pagina.
    */
   private static void help() {
-    System.out.println("java -jar SiteManager.jar [OPTIE...]");
-    System.out.println();
-    System.out.println("  GenerateRSS       Genereer een RSS feed.");
-    System.out.println("  GenerateSite      Genereer de Website in een lokale directory.");
-    System.out.println("  SynchroniseSite   Synchroniseert de Website met de lokale directory.");
-    System.out.println();
-    System.out.println("  --force          [true|FALSE] Altijd kopiëren naar de website.");
-    System.out.println("  --ftpHome                     De HOME directory van de website.");
-    System.out.println("  --ftpHost                     De URL van de host van de website.");
-    System.out.println("  --ftpOverview    [true|FALSE] Bestandslijst van de website.");
-    System.out.println("  --ftpPasswd                   Password van de user voor het onderhoud van de website.");
-    System.out.println("  --ftpSync        [true|FALSE] De website synchroniseren?");
-    System.out.println("  --ftpType        [ACT|pas]    ACTive or PASsive FTP.");
-    System.out.println("  --ftpUser                     De user voor het onderhoud van de website.");
-    System.out.println("  --localOverview  [true|FALSE] Bestandslijst van de 'lokale' website?");
-    System.out.println("  --localSite                   De directory van de 'lokale' website.");
-    System.out.println("  --siteURL                     De 'home' URL van de website (zonder http://).");
-    System.out.println("  --sourceGenerate [true|FALSE] De 'lokale' website genereren?");
-    System.out.println("  --sourceIncludes              De directory van de 'includes'.");
-    System.out.println("  --sourcePages                 De directory van de 'source' paginas.");
-    System.out.println();
+    DoosUtils.naarScherm("  GenerateRSS       ",
+                         resourceBundle.getString("help.genereer.rss"), 80);
+    DoosUtils.naarScherm("  GenerateSite      ",
+                         resourceBundle.getString("help.genereer.site"), 80);
+    DoosUtils.naarScherm("  SynchroniseSite   ",
+                         resourceBundle.getString("help.synchroniseer.site"),
+                         80);
+    DoosUtils.naarScherm("");
     GenerateRss.help();
-    System.out.println();
+    DoosUtils.naarScherm("");
     GenerateSite.help();
-    System.out.println();
+    DoosUtils.naarScherm("");
     SynchroniseSite.help();
-    System.out.println();
   }
 }

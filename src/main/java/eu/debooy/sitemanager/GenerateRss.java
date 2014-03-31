@@ -18,65 +18,92 @@ package eu.debooy.sitemanager;
 
 import eu.debooy.doosutils.Arguments;
 import eu.debooy.doosutils.Banner;
+import eu.debooy.doosutils.DoosUtils;
 import eu.debooy.doosutils.access.Bestand;
 import eu.debooy.doosutils.exception.BestandException;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.TimeZone;
 
 
 /**
  * @author Marco de Booij
  */
-public class GenerateRss {
+public final class GenerateRss {
+  private static  ResourceBundle  resourceBundle  =
+      ResourceBundle.getBundle("ApplicatieResources", Locale.getDefault());
+
   private GenerateRss(){}
 
   public static void execute(String[] args) {
+    String          charsetIn   = Charset.defaultCharset().name();
+    String          charsetUit  = Charset.defaultCharset().name();
     BufferedWriter  output      = null;
     DateFormat      gmtDatum    =
         new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.UK);
 
     gmtDatum.setTimeZone(TimeZone.getTimeZone("GMT"));
-    Banner.printBanner("Generate RSS");
+    Banner.printBanner(resourceBundle.getString("banner.genereer.rss"));
 
     Arguments arguments = new Arguments(args);
-    arguments.setParameters(new String[] {"inhoud"});
+    arguments.setParameters(new String[] {"charsetin", "charsetuit", "inhoud"});
     arguments.setVerplicht(new String[] {"inhoud"});
     if (!arguments.isValid()) {
       help();
       return;
     }
 
+    // Zet de parameters.
+    if (arguments.hasArgument("charsetin")) {
+      charsetIn   = arguments.getArgument("charsetin");
+    }
+    if (arguments.hasArgument("charsetuit")) {
+      charsetUit  = arguments.getArgument("charsetuit");
+    }
+    String      inhoud      = arguments.getArgument("inhoud");
     try {
-      boolean     correct     = true;
-      File        inhoud      = new File(arguments.getArgument("inhoud"));
       File        bestand     = null;
       Properties  properties  = new Properties();
-      properties.load(Bestand.openInvoerBestand(inhoud));
+      properties.load(Bestand.openInvoerBestand(inhoud, charsetIn));
 
+      List<String>  fouten  = new ArrayList<String>();
       if (!properties.containsKey("home.dir")) {
-        System.err.println("Geen home.dir aanwezig.");
-        correct = false;
+        fouten.add(
+            MessageFormat.format(
+                resourceBundle.getString("error.parameter.afwezig"),
+                "home.dir"));
       }
       if (!properties.containsKey("home.url")) {
-        System.err.println("Geen home.url aanwezig.");
-        correct = false;
+        fouten.add(
+            MessageFormat.format(
+                resourceBundle.getString("error.parameter.afwezig"),
+                "home.url"));
       }
       if (!properties.containsKey("rss.name")) {
-        System.err.println("Geen rss.name aanwezig.");
-        correct = false;
+        fouten.add(
+            MessageFormat.format(
+                resourceBundle.getString("error.parameter.afwezig"),
+                "rss.name"));
       }
       // Kan geen RSS bestand maken.
-      if (!correct) {
+      if (!fouten.isEmpty()) {
+        for (String fout: fouten) {
+          DoosUtils.foutNaarScherm(fout);
+        }
         return;
       }
 
@@ -84,21 +111,31 @@ public class GenerateRss {
       String      homeUrl     = properties.getProperty("home.url");
       String      rssName     = properties.getProperty("rss.name");
       File        rss         = new File(homeDir + File.separator + rssName);
-      output  = Bestand.openUitvoerBestand(rss);
+      output  = Bestand.openUitvoerBestand(rss, charsetUit);
       Map<String, String> params  = new HashMap<String, String>();
       if (properties.containsKey("channel.title")) {
         params.put("title", properties.getProperty("channel.title"));
       } else {
-        System.err.println("Geen channel.title aanwezig.");
-        correct = false;
+        fouten.add(MessageFormat.format(
+            resourceBundle.getString("error.parameter.afwezig"),
+            "channel.title"));
       }
       if (properties.containsKey("channel.description")) {
         params.put("description",
                    properties.getProperty("channel.description"));
       } else {
-        System.err.println("Geen channel.description aanwezig.");
-        correct = false;
+        fouten.add(MessageFormat.format(
+            resourceBundle.getString("error.parameter.afwezig"),
+            "channel.description"));
       }
+      // Kan geen header maken.
+      if (!fouten.isEmpty()) {
+        for (String fout: fouten) {
+          DoosUtils.foutNaarScherm(fout);
+        }
+        return;
+      }
+
       if (properties.containsKey("channel.image")) {
         params.put("image", properties.getProperty("channel.image"));
       }
@@ -111,30 +148,31 @@ public class GenerateRss {
       }
       params.put("pubDate", gmtDatum.format(new Date()));
       params.put("rssBestand", homeUrl + "/" + rssName);
-      // Kan geen header maken.
-      if (!correct) {
-        return;
-      }
       header(output, params);
 
       int item          = 1;
       String  itemNaam  = "";
       while (properties.containsKey("item" + item + ".title")) {
-        correct = true;
-        params  = new HashMap<String, String>();
+        boolean correct = true;
+        params          = new HashMap<String, String>();
         params.put("title", properties.getProperty("item" + item + ".title"));
         if (properties.containsKey("item" + item + ".description")) {
           params.put("description",
                      properties.getProperty("item" + item + ".description"));
         } else {
-          System.err.println("Geen item" + item + ".description aanwezig.");
+          DoosUtils.foutNaarScherm(
+              MessageFormat.format(
+                  resourceBundle.getString("error.omschrijving.afwezig"),
+                  item));
           correct = false;
         }
         if (properties.containsKey("item" + item + ".link")) {
           itemNaam  = properties.getProperty("item" + item + ".link");
           params.put("link", homeUrl + "/" + itemNaam);
         } else {
-          System.err.println("Geen item" + item + ".link aanwezig.");
+          DoosUtils.foutNaarScherm(
+              MessageFormat.format(
+                  resourceBundle.getString("error.link.afwezig"), item));
           correct = false;
         }
         // Kan item maken?
@@ -148,22 +186,24 @@ public class GenerateRss {
       }
 
       footer(output);
-      System.out.println("Bestand: " + homeDir + File.separator + rssName);
-      System.out.println("Items  : " + (item - 1));
+      DoosUtils.naarScherm(resourceBundle.getString("label.bestand") + homeDir
+                           + File.separator + rssName);
+      DoosUtils.naarScherm(resourceBundle.getString("label.items")
+                           + (item - 1));
     } catch (BestandException e) {
-      System.err.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     } catch (IOException e) {
-      System.err.println(e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm(e.getLocalizedMessage());
     } finally {
       try {
         if (output != null) {
           output.close();
         }
       } catch (IOException e) {
-        System.err.println(e.getLocalizedMessage());
+        DoosUtils.foutNaarScherm(e.getLocalizedMessage());
       }
     }
-    System.out.println("Klaar.");
+    DoosUtils.naarScherm(resourceBundle.getString("label.klaar"));
   }
 
   /**
@@ -234,13 +274,23 @@ public class GenerateRss {
    * Geeft de 'help' pagina.
    */
   protected static void help() {
-    System.out.println("java -jar SiteManager.jar GenerateRSS --inhoud=<properties bestand>");
-    System.out.println();
-    System.out.println("  --inhoud      Een properties bestand met de parameters en de");
-    System.out.println("                pagina's die in de RSS feed moeten staan.");
-    System.out.println();
-    System.out.println("De parameter inhoud is verplicht.");
-    System.out.println();
+    DoosUtils.naarScherm("java -jar SiteManager.jar GenerateRSS --inhoud=<"
+                         + resourceBundle.getString("label.properties.bestand")
+                         + ">");
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm("  --charsetin   ",
+        MessageFormat.format(resourceBundle.getString("help.charsetin"),
+                             Charset.defaultCharset().name()), 80);
+    DoosUtils.naarScherm("  --charsetuit  ",
+        MessageFormat.format(resourceBundle.getString("help.charsetuit"),
+                             Charset.defaultCharset().name()), 80);
+    DoosUtils.naarScherm("  --inhoud      ",
+                         resourceBundle.getString("help.inhoud"), 80);
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm(
+        MessageFormat.format(resourceBundle.getString("help.paramverplicht"),
+                             "inhoud"), 80);
+    DoosUtils.naarScherm("");
   }
 
   /**

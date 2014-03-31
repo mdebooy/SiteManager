@@ -19,14 +19,18 @@ package eu.debooy.sitemanager;
 import eu.debooy.doosutils.Arguments;
 import eu.debooy.doosutils.Banner;
 import eu.debooy.doosutils.Datum;
+import eu.debooy.doosutils.DoosUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -37,7 +41,10 @@ import org.apache.commons.net.ftp.FTPFile;
 /**
  * @author Marco de Booij
  */
-public class SynchroniseSite {
+public final class SynchroniseSite {
+  private static  ResourceBundle  resourceBundle  =
+      ResourceBundle.getBundle("ApplicatieResources", Locale.getDefault());
+
   private static  Boolean   force       = false;
   private static  Boolean   ftpOverview = false;
   private static  Boolean   ftpSync     = false;
@@ -48,6 +55,8 @@ public class SynchroniseSite {
   private static  String    ftpType     = "";
   private static  String    ftpUser     = "";
   private static  String    localSite   = "";
+
+  private SynchroniseSite() {}
 
   /**
    * Delete een directory leeg om die te kunnen verwijderen.
@@ -72,7 +81,7 @@ public class SynchroniseSite {
   }
 
   public static void execute(String[] args) {
-    Banner.printBanner("Synchronise Site");
+    Banner.printBanner(resourceBundle.getString("banner.synchroniseer.site"));
 
     Arguments arguments = new Arguments(args);
     arguments.setParameters(new String[] {"force", "ftpHome", "ftpHost",
@@ -107,11 +116,11 @@ public class SynchroniseSite {
     if (arguments.hasArgument("localSite")) {
       localSite   = arguments.getArgument("localSite");
     }
-    if (ftpSync) {
-      if (!arguments.hasArgument("localSite")) {
-        System.out.println("- localSite verplicht bij ftpSync=true.");
-        return;
-      }
+    if (ftpSync
+        && !arguments.hasArgument("localSite")) {
+      DoosUtils.foutNaarScherm(
+          resourceBundle.getString("error.localsite.afwezig"));
+      return;
     }
 
     try {
@@ -129,43 +138,59 @@ public class SynchroniseSite {
 
       if (ftpOverview) {
         showFTPDirectoryContent(ftpHome);
-        System.out.println();
+        DoosUtils.naarScherm("");
       }
 
       ftp.logout();
     } catch (IOException e) {
-      System.err.println("IOException: " + e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm("IOException: " + e.getLocalizedMessage());
     } finally {
       try {
         if (ftp.isConnected()) {
           ftp.disconnect();
         }
       } catch (IOException e) {
-        System.err.println("IOException: " + e.getLocalizedMessage());
+        DoosUtils.foutNaarScherm("IOException: " + e.getLocalizedMessage());
       }
     }
-    System.out.println("Klaar.");
+    DoosUtils.naarScherm(resourceBundle.getString("label.klaar"));
   }
 
   /**
    * Geeft de 'help' pagina.
    */
   protected static void help() {
-    System.out.println("java -jar SiteManager.jar SynchroniseSite [OPTIE...]");
-    System.out.println();
-    System.out.println("  --force          [true|FALSE] Altijd kopiëren naar de website.");
-    System.out.println("  --ftpHome                     De HOME directory van de website.");
-    System.out.println("  --ftpHost                     De URL van de host van de website.");
-    System.out.println("  --ftpOverview    [true|FALSE] Bestandslijst van de website.");
-    System.out.println("  --ftpPasswd                   Password van de user voor het onderhoud van de website.");
-    System.out.println("  --ftpSync        [true|FALSE] De website synchroniseren?");
-    System.out.println("  --ftpType        [ACT|pas]    ACTive or PASsive FTP.");
-    System.out.println("  --ftpUser                     De user voor het onderhoud van de website.");
-    System.out.println("  --localSite                   De directory van de 'lokale' website.");
-    System.out.println();
-    System.out.println("Alle parameters behalve localSite zijn verplicht.");
-    System.out.println("De parameter localSite is enkel verplicht bij ftpSync TRUE.");
-    System.out.println();
+    DoosUtils.naarScherm("java -jar SiteManager.jar SynchroniseSite["
+                         + resourceBundle.getString("label.optie")
+                         + "] --localSite=<"
+                         + resourceBundle.getString("label.localsite") + ">");
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm("  --force          [true|FALSE] ",
+                         resourceBundle.getString("help.force"), 80);
+    DoosUtils.naarScherm("  --ftpHome                     ",
+                         resourceBundle.getString("help.ftp.home"), 80);
+    DoosUtils.naarScherm("  --ftpHost                     ",
+                         resourceBundle.getString("help.ftp.host"), 80);
+    DoosUtils.naarScherm("  --ftpOverview    [true|FALSE] ",
+                         resourceBundle.getString("help.ftp.overview"), 80);
+    DoosUtils.naarScherm("  --ftpPasswd                   ",
+                         resourceBundle.getString("help.ftp.passwd"), 80);
+    DoosUtils.naarScherm("  --ftpSync        [true|FALSE] ",
+                         resourceBundle.getString("help.ftp.sync"), 80);
+    DoosUtils.naarScherm("  --ftpType        [ACT|pas]    ",
+                         resourceBundle.getString("help.ftp.type"), 80);
+    DoosUtils.naarScherm("  --ftpUser                     ",
+                         resourceBundle.getString("help.ftp.user"), 80);
+    DoosUtils.naarScherm("  --localSite                   ",
+                         resourceBundle.getString("help.localsite"), 80);
+    DoosUtils.naarScherm("");
+    DoosUtils.naarScherm(
+        MessageFormat.format(resourceBundle.getString("help.paramverplicht"),
+                             "localSite"), 80);
+    DoosUtils.naarScherm(
+        MessageFormat.format(resourceBundle.getString("help.enkelverplicht"),
+                             "localSite", "ftpSync TRUE"), 80);
+    DoosUtils.naarScherm("");
   }
 
   /**
@@ -181,7 +206,7 @@ public class SynchroniseSite {
       FTPFile[] content = ftp.listFiles();
       if (null != content) {
         for (int i = 0; i < content.length; i++) {
-          System.out.println(pwd + "/" + content[i].getName());
+          DoosUtils.naarScherm(pwd + "/" + content[i].getName());
           if (content[i].isDirectory()) {
             showFTPDirectoryContent(content[i].getName());
           }
@@ -189,7 +214,7 @@ public class SynchroniseSite {
       }
       ftp.changeWorkingDirectory("..");
     } catch (IOException e) {
-      System.out.println("IOException: " + e.getLocalizedMessage());
+      DoosUtils.foutNaarScherm("IOException: " + e.getLocalizedMessage());
     }
   }
 
@@ -258,17 +283,19 @@ public class SynchroniseSite {
                                                          .getTimeInMillis()),
                                        "dd/MM/yyyy HH:mm:ss.SSS");
               } catch (ParseException e) {
-                System.out.println("ParseException: " + e.getLocalizedMessage());
+                DoosUtils.foutNaarScherm("ParseException: "
+                                         + e.getLocalizedMessage());
               }
-              System.out.println("Vervang  : " + ftp.printWorkingDirectory()
-                                 + "/" + locFile + " [" +  datum + "]");
+              DoosUtils.naarScherm(resourceBundle.getString("label.vervang")
+                                   + ftp.printWorkingDirectory() + "/"
+                  + locFile + " [" +  datum + "]");
               ftp.storeFile(locFile, new FileInputStream(directory
                                                          + File.separator
                                                          + locFile));
             }
           } else {
-            System.out.println("Vervang  : " + ftp.printWorkingDirectory()
-                               + "/" + locFile);
+            DoosUtils.naarScherm(resourceBundle.getString("label.vervang")
+                                 + ftp.printWorkingDirectory() + "/" + locFile);
             if (locItem.isFile()) {
               deleteFTPDirectory(ftpFile);
               ftp.storeFile(locFile, new FileInputStream(directory
@@ -298,8 +325,8 @@ public class SynchroniseSite {
       } else {
         // Enkel op WebSite.
         if (ftpFile.compareTo(locFile) < 0) {
-          System.out.println("Verwijder: " + ftp.printWorkingDirectory()
-                             + "/" + ftpFile);
+          DoosUtils.naarScherm(resourceBundle.getString("label.verwijder")
+                               + ftp.printWorkingDirectory() + "/" + ftpFile);
           if (ftpItem.isFile()) {
             ftp.deleteFile(ftpFile);
           } else {
@@ -315,8 +342,8 @@ public class SynchroniseSite {
         } else {
           // Nog niet op WebSite.
           if (ftpFile.compareTo(locFile) > 0) {
-            System.out.println("Kopieer  : " + ftp.printWorkingDirectory()
-                               + "/" + locFile);
+            DoosUtils.naarScherm(resourceBundle.getString("label.kopier")
+                                 + ftp.printWorkingDirectory() + "/" + locFile);
             if (locItem.isFile()) {
               ftp.storeFile(locFile, new FileInputStream(directory
                                                          + File.separator
