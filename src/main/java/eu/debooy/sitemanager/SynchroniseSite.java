@@ -287,15 +287,16 @@ public final class SynchroniseSite {
                                          + e.getLocalizedMessage());
               }
               DoosUtils.naarScherm(resourceBundle.getString("label.vervang")
-                                   + ftp.printWorkingDirectory() + "/"
-                  + locFile + " [" +  datum + "]");
+                                   + " " + ftp.printWorkingDirectory() + "/"
+                                   + locFile + " [" +  datum + "]");
               ftp.storeFile(locFile, new FileInputStream(directory
                                                          + File.separator
                                                          + locFile));
             }
           } else {
             DoosUtils.naarScherm(resourceBundle.getString("label.vervang")
-                                 + ftp.printWorkingDirectory() + "/" + locFile);
+                                 + " " + ftp.printWorkingDirectory() + "/"
+                                 + locFile);
             if (locItem.isFile()) {
               deleteFTPDirectory(ftpFile);
               ftp.storeFile(locFile, new FileInputStream(directory
@@ -326,7 +327,8 @@ public final class SynchroniseSite {
         // Enkel op WebSite.
         if (ftpFile.compareTo(locFile) < 0) {
           DoosUtils.naarScherm(resourceBundle.getString("label.verwijder")
-                               + ftp.printWorkingDirectory() + "/" + ftpFile);
+                               + " " + ftp.printWorkingDirectory() + "/"
+                               + ftpFile);
           if (ftpItem.isFile()) {
             ftp.deleteFile(ftpFile);
           } else {
@@ -343,7 +345,8 @@ public final class SynchroniseSite {
           // Nog niet op WebSite.
           if (ftpFile.compareTo(locFile) > 0) {
             DoosUtils.naarScherm(resourceBundle.getString("label.kopier")
-                                 + ftp.printWorkingDirectory() + "/" + locFile);
+                                 + " " + ftp.printWorkingDirectory() + "/"
+                                 + locFile);
             if (locItem.isFile()) {
               ftp.storeFile(locFile, new FileInputStream(directory
                                                          + File.separator

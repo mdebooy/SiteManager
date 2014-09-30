@@ -220,7 +220,7 @@ public final class GenerateSite {
         MessageFormat.format(resourceBundle.getString("help.charsetuit"),
                              Charset.defaultCharset().name()), 80);
     DoosUtils.naarScherm("  --localOverview  [true|FALSE] ",
-                         resourceBundle.getString("help.locakloverview"), 80);
+                         resourceBundle.getString("help.localoverview"), 80);
     DoosUtils.naarScherm("  --localSite                   ",
                          resourceBundle.getString("help.localsite"), 80);
     DoosUtils.naarScherm("  --siteURL                     ",
@@ -379,38 +379,44 @@ public final class GenerateSite {
               if (uitvoer.isFile()) {
                 try{
                   if (!uitvoer.delete()) {
-                    DoosUtils.foutNaarScherm("Kan bestand " + naam
-                                             + " niet verwijderen.");
+                    DoosUtils.foutNaarScherm(MessageFormat.format(
+                        resourceBundle.getString("error.verwijder.bestand"),
+                        naam));
                   }
                 } catch (SecurityException e) {
-                  DoosUtils.foutNaarScherm("Fout bij verwijderen van " + naam
-                                           + " ["+ e.getLocalizedMessage()
-                                           + "].");
+                  DoosUtils.foutNaarScherm(MessageFormat.format(
+                      resourceBundle.getString("error.verwijder.bestand"),
+                      naam + " ["+ e.getLocalizedMessage() + "]."));
                 }
                 try{
                   if (!(new File(naam)).mkdir()) {
-                    DoosUtils.foutNaarScherm("Kan directory " + naam
-                                             + " niet maken.");
+                    DoosUtils.foutNaarScherm(MessageFormat.format(
+                        resourceBundle.getString("error.maak.directory"),
+                        naam));
                   }
                 } catch (SecurityException e) {
-                  DoosUtils.foutNaarScherm("Fout bij maken van " + naam + " ["
-                                           + e.getLocalizedMessage() + "].");
+                  DoosUtils.foutNaarScherm(MessageFormat.format(
+                      resourceBundle.getString("error.maak.directory"),
+                      naam + " [" + e.getLocalizedMessage() + "]."));
                 }
               }
             } else {
               try{
                 if (!(new File(naam)).mkdir()) {
-                  DoosUtils.foutNaarScherm("Kan directory " + naam
-                                           + " niet maken.");
+                  DoosUtils.foutNaarScherm(MessageFormat.format(
+                      resourceBundle.getString("error.maak.directory"),
+                      naam));
                 }
               } catch (SecurityException e) {
-                DoosUtils.foutNaarScherm("Fout bij maken van " + naam + " ["
-                                         + e.getLocalizedMessage() + "].");
+                DoosUtils.foutNaarScherm(MessageFormat.format(
+                    resourceBundle.getString("error.maak.directory"),
+                    naam + " [" + e.getLocalizedMessage() + "]."));
               }
             }
             processWebSite(directory + File.separator + content[i]);
           } else if (isChanged(directory, content[i])) {
-            DoosUtils.naarScherm("Modified: " + directory + File.separator
+            DoosUtils.naarScherm(resourceBundle.getString("label.gewijzigd")
+                                 + " " + directory + File.separator
                                  + content[i]);
             BufferedReader  invoer  =
                 Bestand.openInvoerBestand(directory + File.separator
