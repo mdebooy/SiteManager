@@ -230,7 +230,7 @@ public final class GenerateSite {
     DoosUtils.naarScherm("  --sourceIncludes              ",
                          resourceBundle.getString("help.source.includes"), 80);
     DoosUtils.naarScherm("  --sourcePages                 ",
-                         resourceBundle.getString("source.pages"), 80);
+                         resourceBundle.getString("help.source.pages"), 80);
     DoosUtils.naarScherm("");
     DoosUtils.naarScherm(
         MessageFormat.format(resourceBundle.getString("help.paramverplicht"),
