@@ -10,12 +10,12 @@
   <artifactId>sitemanager</artifactId>
   <packaging>jar</packaging>
   <name>WebSite Manager</name>
-  <version>0.4.1-SNAPSHOT</version>
+  <version>1.0.0</version>
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <scm>
-    <connection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</connection>
-    <developerConnection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</developerConnection>
+    <connection>scm:svn:http://svn.debooy.eu/svn/SiteManager/tags/sitemanager-1.0.0</connection>
+    <developerConnection>scm:svn:http://svn.debooy.eu/svn/SiteManager/tags/sitemanager-1.0.0</developerConnection>
   </scm>
 
   <developers>
