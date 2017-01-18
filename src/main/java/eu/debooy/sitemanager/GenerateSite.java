@@ -320,13 +320,18 @@ public final class GenerateSite {
     try {
       while ((lijn = invoer.readLine()) != null) {
         if (lijn.indexOf(INCLUDE_TAG) >= 0) {
+          String          bestand =
+              lijn.substring(lijn.indexOf(INCLUDE_TAG) + INCLUDE_TAG.length(),
+                             lijn.indexOf(INCLUDE_ENDTAG));
           BufferedReader  include =
               Bestand.openInvoerBestand(sourceIncludes + File.separator
-                  + lijn.substring(lijn.indexOf(INCLUDE_TAG)
-                                   + INCLUDE_TAG.length(),
-                                   lijn.indexOf(INCLUDE_ENDTAG)),
+                                          + bestand,
                                         charsetIn);
-          kopieerInhoud(include, uitvoer);
+          if (null != include) {
+            kopieerInhoud(include, uitvoer);
+          } else {
+            DoosUtils.foutNaarScherm("Include" + bestand + " bestaat niet.");
+          }
         } else {
           uitvoer.write(lijn);
           uitvoer.newLine();
