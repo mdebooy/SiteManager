@@ -55,6 +55,8 @@ public final class GenerateRss {
     BufferedWriter  output      = null;
     DateFormat      gmtDatum    =
         new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.UK);
+    DateFormat      timestamp   =
+        new SimpleDateFormat("yyyyDDDHHmmss", Locale.UK);
 
     gmtDatum.setTimeZone(TimeZone.getTimeZone("GMT"));
     Banner.printBanner(resourceBundle.getString("banner.genereer.rss"));
@@ -177,9 +179,10 @@ public final class GenerateRss {
         }
         // Kan item maken?
         if (correct) {
-          bestand = new File(homeDir + File.separator + itemNaam);
-          params.put("pubDate",
-                     gmtDatum.format(new Date(bestand.lastModified())));
+          bestand     = new File(homeDir + File.separator + itemNaam);
+          Date  datum = new Date(bestand.lastModified());
+          params.put("pubDate",   gmtDatum.format(datum));
+          params.put("timestamp", timestamp.format(datum));
           item(output, params);
         }
         item++;
@@ -311,7 +314,7 @@ public final class GenerateRss {
     output.newLine();
     output.write("    <link>" + params.get("link") + "</link>");
     output.newLine();
-    output.write("    <guid>" + params.get("link") + "</guid>");
+    output.write("    <guid>" + params.get("link") + "." + params.get("timestamp") + "</guid>");
     output.newLine();
     output.write("    <pubDate>" + params.get("pubDate") + "</pubDate>");
     output.newLine();
