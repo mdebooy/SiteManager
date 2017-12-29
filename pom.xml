@@ -14,8 +14,8 @@
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <scm>
-    <connection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</connection>
-    <developerConnection>scm:svn:http://svn.debooy.eu/svn/SiteManager/trunk</developerConnection>
+    <connection>scm:git:ssh://ptah.debooy.eu/srv/git/debooy/SiteManager.git</connection>
+    <developerConnection>scm:git:ssh://ptah.debooy.eu/srv/git/debooy/SiteManager.git</developerConnection>
   </scm>
 
   <developers>
