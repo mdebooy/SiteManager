@@ -10,12 +10,13 @@
   <artifactId>sitemanager</artifactId>
   <packaging>jar</packaging>
   <name>WebSite Manager</name>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.1</version>
   <description>Aanmaken van een WebSite en het synchroniseren van de remote site.</description>
   <inceptionYear>2008</inceptionYear>
   <scm>
     <connection>scm:git:ssh://ptah.debooy.eu/srv/git/debooy/SiteManager.git</connection>
     <developerConnection>scm:git:ssh://ptah.debooy.eu/srv/git/debooy/SiteManager.git</developerConnection>
+    <tag>sitemanager-1.0.1</tag>
   </scm>
 
   <developers>
